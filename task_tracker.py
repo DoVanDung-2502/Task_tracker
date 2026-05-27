@@ -42,7 +42,6 @@ def update_task(task_id, new_description):
     if not new_description.strip():
         print("Error: Description cannot be empty")
         return False
-    
     tasks = read_db()
     found = False
     for task in tasks:
@@ -71,6 +70,40 @@ def delete_task(task_id):
         print(f"Error: Task with ID {task_id} not found")
         return False
     return True
+def mark_status(task_id, new_status):
+    tasks = read_db()
+    found = False
+    for task in tasks:
+        if task['id'] == task_id:
+            task['status'] = new_status
+            task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            found = True
+            break
+        else:    
+            print("Error: Invalid status. Please choose one of: todo, progress, done")
+            return False
+    if found:
+        write_db(tasks)
+        print(f"Updated task {task_id} to status {new_status}")
+    else:
+        print(f"Error: Task with ID {task_id} not found")
+        return False
+    return True
+def list_task(status_filter=None):
+    tasks = read_db()
+    
+    if status_filter:
+        tasks = [t for t in tasks if t['status'] == status_filter]
+
+    if not tasks:
+        print("No tasks found.")
+        return
+    
+    for task in tasks:
+        print(f"ID: {task['id']} | Status: {task['status']} | "
+              f"Created: {task['created_at']} | "
+              f"Description: {task['description']}")
+    
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python task_tracker.py add [description]")
@@ -93,7 +126,6 @@ if __name__ == "__main__":
             try:
                 task_id = int(sys.argv[2])
                 new_description = " ".join(sys.argv[3:])
-                update_task(task_id, new_description)
             except ValueError:
                 print("Error: Task ID must be a number")
             sys.exit(0) 
@@ -107,5 +139,25 @@ if __name__ == "__main__":
             except ValueError:
                 print("Error: Task ID must be a number")
         sys.exit(0)     
-
+    elif command in ['mark-in-progress', 'mark-done']:
+        if len(sys.argv) < 3:
+            print(f"Usage: python task_tracker.py {command} <task_id>")
+        else:
+            try:
+                task_id = int(sys.argv[2])
+                mark_status(task_id, command.split('-')[1])
+            except ValueError:
+                print("Error: Task ID must be a number")
+        sys.exit(0)     
+    elif command == "list":
+        if len(sys.argv) == 2:
+            list_task()
+        else:
+            status = sys.argv[2].lower()
+            if status in ["todo", "progress", "done"]:
+                list_task(status)
+            else:
+                print(f"Invalid status: {status}")
+                print("Usage: python task_tracker.py list [todo|progress|done]")
+        sys.exit(0)
     
