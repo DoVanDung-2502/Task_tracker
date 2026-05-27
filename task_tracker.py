@@ -26,7 +26,7 @@ def add_task(description):
 
     new_id = max([t['id'] for t in tasks], default=0) + 1
 
-    now_str = datetime.now().isoformat()
+    now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     new_task = {
         'id' : new_id,
         'description' : description,
@@ -38,6 +38,39 @@ def add_task(description):
     write_db(tasks)
     print(f"Added task '{description}' (ID: {new_id})")
     
+def update_task(task_id, new_description):
+    if not new_description.strip():
+        print("Error: Description cannot be empty")
+        return False
+    
+    tasks = read_db()
+    found = False
+    for task in tasks:
+        if task['id'] == task_id:
+            task['description'] = new_description
+            task['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            found = True
+            break
+    if found:
+        write_db(tasks)
+        print(f"Updated task {task_id} '{new_description}'")
+    else:
+        print(f"Error: Task with ID {task_id} not found")
+        return False
+    return True
+
+def delete_task(task_id):
+    tasks = read_db()
+    original_length = len(tasks)
+    tasks = [t for t in tasks if t['id'] != task_id]
+
+    if len(tasks) < original_length:
+        print(f"Task {task_id} deleted")
+        write_db(tasks)
+    else:
+        print(f"Error: Task with ID {task_id} not found")
+        return False
+    return True
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python task_tracker.py add [description]")
@@ -53,7 +86,26 @@ if __name__ == "__main__":
             description = " ".join(sys.argv[2:])
             add_task(description)
             sys.exit(0)
-    else:
-        print(f"Unknow command: {sys.argv[1]}")    
+    elif command == "update":
+        if len(sys.argv) < 4:
+            print("Usage: python task_tracker.py update <task_id> <new_description>")
+        else:
+            try:
+                task_id = int(sys.argv[2])
+                new_description = " ".join(sys.argv[3:])
+                update_task(task_id, new_description)
+            except ValueError:
+                print("Error: Task ID must be a number")
+            sys.exit(0) 
+    elif command == "delete":
+        if len(sys.argv) < 3:
+            print("Usage: python task_tracker.py delete <task_id>")
+        else:
+            try:
+                task_id = int(sys.argv[2])
+                delete_task(task_id)  
+            except ValueError:
+                print("Error: Task ID must be a number")
+        sys.exit(0)     
 
     
